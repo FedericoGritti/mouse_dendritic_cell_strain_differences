@@ -122,10 +122,7 @@ Install required Python packages:
 ```bash
 pip install numpy pandas matplotlib seaborn scikit-learn scipy statsmodels plotly jupyter biopython
 ```
-
-## Step 8: Test the Setup
-
-Open `test_r.ipynb` in VS Code and run the cells to verify packages are working.
+\
 
 ## Usage
 

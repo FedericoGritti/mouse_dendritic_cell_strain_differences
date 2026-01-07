@@ -1,2 +1,5 @@
 # Ignore data folder and its contents
-data/
+archive/
+.vscode/
+useful_archive/
+/.venv
