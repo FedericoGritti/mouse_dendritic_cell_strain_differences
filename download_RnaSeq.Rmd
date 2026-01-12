@@ -1,0 +1,243 @@
+---
+title: "Download bulk transcriptomic data"
+output: Bulk_data_download_notebook
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Download Bulk RNAseq data from recount3
+
+In this notebook we show how you can explore the recount dataset and
+download data for your project.
+
+To run the following code you must have Bioconductor installed. From
+Bioconductor, you can install recount3.
+
+```{r}
+# BiocManager::install("recount3")
+```
+
+Load recount3 library and the list of its projects to explore the
+projects.
+
+`recount3` is a large-scale resource of uniformly processed RNA-seq data
+for humans and mice. It aggregates publicly available datasets and
+provides them in a standardized format for downstream analysis.
+
+## Main Data Sources of recount3
+
+-   **Sequence Read Archive (SRA)**
+    -   Largest source of raw RNA-seq data.
+    -   Includes diverse studies across tissues, conditions, and
+        species.
+    -   Data are annotation-agnostic and processed uniformly using the
+        Monorail pipeline.
+-   **Genotype-Tissue Expression (GTEx) Project**
+    -   High-quality RNA-seq data from multiple human tissues.
+    -   Focused on understanding tissue-specific gene expression.
+-   **The Cancer Genome Atlas (TCGA)**
+    -   RNA-seq data from various cancer types.
+    -   Enables cancer-specific expression and splicing analyses.
+
+For more details, see [recount3 documentation](http://rna.recount.bio/).
+
+```{r}
+library(recount3)
+
+# List of available projects
+projects <- available_projects()
+head(projects)
+```
+
+## Genotype-Tissue Expression (GTEx) Project
+
+```{r}
+# Filter by GTEx (normal tissues)
+gtex_projects <- subset(projects, file_source== "gtex")
+
+# Explore metadata
+head(gtex_projects)
+```
+
+The **GTEx (Genotype-Tissue Expression) Project** provides RNA-seq data
+grouped by tissue type. This organization allows researchers to study
+tissue-specific gene expression patterns.
+
+For example, we ca select the **pancreas** tissue.
+
+```{r}
+
+proj_info_pancreas <- subset(
+    gtex_projects,
+    project == "PANCREAS" & project_type == "data_sources"
+)
+
+# Connet to GTEx project
+rse_gene_pancreas <- create_rse(proj_info_pancreas)
+rse_gene_pancreas
+
+```
+
+The file contains the counts of 63856 genes from 360 samples.
+
+We now explore sample metadata variables.
+
+```{r}
+colnames(colData(rse_gene_pancreas))
+```
+
+We see for instance columns - **gtex.sex**: Biological sex of the
+donor. - **gtex.age**: Age group of the donor. The meaning of the other
+columns can be found at
+<https://www.gtexportal.org/home/downloads/adult-gtex/metadata>
+
+## The Cancer Genome Atlas (TCGA)
+
+We explore now the tcga projects
+
+```{r}
+
+# Filter by TCGA (the cancer genome atlas)
+tcga_projects <- subset(projects, file_source== "tcga")
+
+# Explore metadata
+head(tcga_projects)
+
+```
+
+Each project is associate to a cancer type. We explore the BRCA project
+and the sample metadata, focusing on the demographic and
+dignosis-related variables.
+
+```{r}
+
+proj_info_brca <- subset(
+    tcga_projects,
+    project == "BRCA" & project_type == "data_sources"
+)
+
+
+# Connet to GTEx project
+rse_gene_tcga <- create_rse(proj_info_brca)
+
+# Samples metadata
+metadata_tcga <- colData(rse_gene_tcga)
+all_cols <- colnames(metadata_tcga)
+diagnosis_cols <- grep("^tcga\\.gdc_cases\\.diagnoses", all_cols, value = TRUE)
+print(diagnosis_cols)
+demo_cols <- grep("^tcga\\.gdc_cases\\.demographic", all_cols, value = TRUE)
+print(demo_cols)
+```
+
+Although TCGA provides rich metadata for each sample, **not all
+variables are consistently available**. Some fields can be partially or
+even completely missing across samples. Despite this, the dataset
+potentially includes a wide range of information about:
+
+-   **Demographic characteristics** of the donor (e.g., age, sex,
+    ethnicity)
+-   **Clinical and diagnostic details** (e.g., primary diagnosis, tumor
+    stage)
+
+For example, consider the variable **`tumor_stage`**: - This field
+describes the stage of a tumor when present. - It is relevant for
+cancer-related samples but will be **missing for non-cancer tissues**. -
+It takes values such as Stage Ia, Stage Ib, Stage IIa, Stage IIb, Stage
+IIIa, Stage IV, reflecting increasing severity and spread of the tumor.
+
+```{r}
+head(metadata_tcga$tcga.gdc_cases.diagnoses.tumor_stage)
+
+```
+
+## Sequence Read Archive (SRA)
+
+Datasets in **SRA (Sequence Read Archive)** correspond to **independent
+studies**, each submitted by different research groups.\
+These studies can be complex to understand and can vary greatly in: -
+**Organism** (human, mouse, plant, etc.) - **Experimental design**
+(tissue type, condition, sequencing protocol) - **Data quality and
+completeness**
+
+Because of this diversity, it is important to **explore the study
+details on GEO (Gene Expression Omnibus)** before using the data.\
+On GEO, you can: - Read the study description - Check sample annotations
+and metadata - Identify the **SRA accession ID** (e.g., `SRPXXXXXX`)\
+This ID is then used to **retrieve and download the data from
+recount3**.
+
+Notice that not all SRA studies are included in recount3. You can
+however download them directly from the SRA.
+
+------------------------------------------------------------------------
+
+Let's consider the following example
+
+**Study:** *RNA-seq of human pancreatic tissue*\
+**GEO Accession:**
+[GSE93326](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE93326)
+**Description:**\
+- Focuses on gene expression in human pancreas samples. - Includes
+metadata such as tissue type, donor age, and health status.
+
+From GEO, you can extract the **SRA Project ID:** `SRP096338`
+
+```{r}
+sra_ID = "SRP096338"
+proj_info <- subset(projects, project == sra_ID)
+proj_info
+```
+
+Once you have identified a study (e.g., TCGA Breast Cancer, project code
+BRCA), you can download raw counts (unscaled) from the project (e.g.,
+rse_gene_tcga).
+
+```{r}
+proj_info_brca
+```
+
+```{r}
+
+## Download the gene counts file for project SRP009615
+url_brca_gene <-  locate_url(
+    "BRCA",
+    "data_sources/tcga",
+    type = "gene"
+)
+local_brca_gene <- file_retrieve(url = url_brca_gene)
+
+## Read the gene counts, take about 3 seconds
+brca_gene_counts <- read_counts(local_brca_gene)
+dim(brca_gene_counts)
+
+```
+
+```{r}
+brca_gene_counts[1:5,1:4 ]
+
+```
+
+We finally create a dataframe with the sample metadata from tcga
+
+```{r}
+  all_cols <- colnames(metadata_tcga)
+  tcga_cols <- grep("^tcga\\.", all_cols, value = TRUE)
+  sample_data <- metadata_tcga[tcga_cols]
+  sample_data[1:5, 53:56]
+
+```
+
+# Convert to EdgeR
+
+Remember that the count matrix has to be converted to EdgeR to perform
+all the subsequent analyses. To do so, considering the last example, the
+count matrix is stored in the `brcs_gene_counts` matrix. To convert the dataframe into EdgeR is sufficient to run:
+
+```{r}
+library(edgeR)
+edgeR_object <- DGEList(brca_gene_counts)
+edgeR_object
+
+```
+

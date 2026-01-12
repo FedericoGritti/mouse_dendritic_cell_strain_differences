@@ -1,0 +1,155 @@
+# Download sc-RNAseq data
+
+First, we install the necessary packages. Simple data to start working with single cells are available in the "scRNAseq" and "SingleCellExperiment" packages.
+
+```{r}
+# Bioconductor packages
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+# BiocManager::install(c("scRNAseq", "SingleCellExperiment", "Seurat", "SeuratData"), ask = FALSE)
+
+packages <- c("scRNAseq", "SingleCellExperiment", "Seurat", "SeuratData")
+install_if_missing <- function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    BiocManager::install(pkg, ask = FALSE)
+  }
+}
+lapply(packages, install_if_missing)
+```
+
+# Load Libraries
+
+```{r}
+library(scRNAseq)
+library(Seurat)
+library(SingleCellExperiment)
+
+
+```
+
+# Explore the documentation
+
+You can check the documentation of this package by running, the code here will open an html with several exapmples on how to retrieve the data
+
+```{r}
+
+browseVignettes("scRNAseq")
+
+
+```
+
+You can explore the datasets in scRNAseq using surveyDatasets(). In particular, column "description" briefly introduces the study they come from.
+
+```{r}
+surveyDatasets()$description
+
+```
+
+# Search for datasets
+
+Items from line 65 to 79 come from the study named "he-organs-2020" which provide single-cell transcriptome profiling of cells from 15 major organs of human adults.
+
+```{r}
+name = "he-organs-2020"
+version = "2023-12-21"
+```
+
+This is a multiple - tissue study, the dataset referred to a particoular tissue is defined as a as "path", thus we can list them by running
+
+```{r}
+listPaths(name,version)
+```
+
+Alternatively, you can look for datasets referred to other tissues by running:
+
+```{r}
+blood_datasets <- searchDatasets("blood")[,c("name", "title","version")]
+blood_datasets
+
+```
+
+Here we are looking for all the datasets referred to blood tissue, the study `he-organs-2020` is present in this list, in fact if we slice the dataframe we can find it
+
+```{r}
+
+# Find the same dataset in the list of all datasets referred to blodd 
+
+organs <- subset(blood_datasets, grepl("he-organs-2020", name))
+organs
+```
+
+A complete list of the tissues available in the library can be obtained by running
+
+```{r}
+all_datasets <- listDatasets()
+unique(all_datasets$Part)
+
+```
+
+**You are free of using the dataset you want but we suggest to stick to the `he-organs-2020` study if possible**
+
+# Load dataset
+
+Once the dataset of interest has been identified we can load it using the function `fetchDataset`, this function will accept the name of the dataset, the version and the path (i.e. the tissue of interest for multi-tissue studies)
+
+```{r}
+path = "blood"
+blood_sc <- fetchDataset(name,version,path)
+blood_sc
+```
+
+The dataset provides counts for 14552 genes from 1407 cells found in human blood.
+
+**If available, you can also access the metadata to retrieve more information by running**
+
+```{r}
+str(fetchMetadata(name, version))
+```
+
+In this case as you can see from the row metadata, in the blood_sc dataset the metadata are not present.
+
+# Converto into a Seurat Object
+
+In order to convert the scRNA object into a Seurat Object we need to first access the count matrix. To do so first you need to list the assays of the study, here we can see that the assay is count (fourth line of the blood_sc dataset). Anyway we can list the assays of a dataset and access them by running
+
+```{r}
+# list assays
+assays(blood_sc)
+
+#access the assay
+assay(blood_sc, "counts")
+
+```
+
+**Further information on the dataset can be found in**
+
+```{r}
+colnames(colData(blood_sc))
+
+```
+
+For example Cell type are provided via the field Cell_type_in_merged_data
+
+```{r}
+head(blood_sc$Cell_type_in_merged_data)
+```
+
+As well ass the library size for every cell type:
+
+```{r}
+head(blood_sc$nCount_RNA)
+
+```
+
+# Convert the data to Seurat Object
+
+Finally, we can create a seurat Object from the count matrix through the function `CreateSeuratObject()` here the argument has to be the count matrix:
+
+```{r}
+so <- CreateSeuratObject(assay(blood_sc, "counts"))
+```
+
+```{r}
+so@meta.data
+```
+
+Now data is in Seurat Object and ready to be analyzed.
