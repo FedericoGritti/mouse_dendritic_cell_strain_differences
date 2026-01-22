@@ -1,14 +1,5 @@
 # Bioinformatics Project Setup Guide
 
-This guide walks through setting up R, Jupyter notebooks with R kernel, and connecting to the GitHub repository for the Arabidopsis stress integrative omics project.
-
-## Prerequisites
-
-- Linux system (tested on Pop!_OS 22.04)
-- Python and pip installed
-- Git installed
-- Internet connection
-
 ## Step 1: Install or Upgrade R
 
 Check if R is installed:
@@ -128,18 +119,4 @@ pip install numpy pandas matplotlib seaborn scikit-learn scipy statsmodels plotl
 
 - Use R cells for bioinformatics analysis with packages like DESeq2, edgeR, clusterProfiler.
 - Use Python cells for data manipulation and visualization.
-- For mixed R/Python code, consider using reticulate in R.
 
-## Troubleshooting
-
-- If R kernel not showing: Re-run `IRkernel::installspec()`
-- Permission issues: Use `sudo` for system-wide installs
-- BiocManager version conflicts: Ensure R >= 4.4
-- Package loading issues: Restart the R kernel in notebooks
-- Python packages not found: Ensure virtual environment is activated
-
-## Project Structure
-
-- `test_r.ipynb`: Test notebook for R and Python package checks
-- `.venv/`: Python virtual environment
-- Other files: Add your analysis scripts and data
